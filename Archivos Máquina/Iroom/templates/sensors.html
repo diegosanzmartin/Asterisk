@@ -1,0 +1,188 @@
+{% extends "layout.html" %}
+{% block head %}
+	{% if session.logged_in %}   
+	<script type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/alertifyjs@1.11.0/build/css/alertify.min.css" rel="stylesheet"/>
+	<script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.11.0/build/alertify.min.js"></script>
+  {% endif%}
+{% endblock %}
+{% block body %}
+
+  {% if session.logged_in %}
+    <div id="sensores"><br>
+    	<h2>Sensores</h2>
+  		<div id="ct"></div> <meter id="temperatura" value="0" min="0" max="50" low="18" high="26"></meter> 
+  		<div id="ch"></div> <meter id="humedad" value="0" min="0" max="100" low="18" high="26"></meter> 
+  		<div id="cl"></div> <meter id="luz" value="0" min="0" max="100" low="18" high="26"></meter> 
+  		<div id="cs"></div> <meter id="sonido" value="0" min="0" max="100" low="18" high="26"></meter> 
+  		<div id="cm"></div> <meter id="movimiento" value="0" min="0" max="1" low="0" high="1"></meter> 
+   </div><br><br>
+   <div class="grafica">
+		<h2 id="sens">Temperatura</h2>
+	    <canvas id="temp_graph"></canvas>
+  </div>
+
+  <script>
+	var ctx_live = document.getElementById("temp_graph");
+	var type_sensor = ['Temperatura', 'Humedad', 'Luz', 'Sonido', 'Movimiento']
+	var sensor = ['temperature', 'humidity', 'light', 'sound', 'motion']
+	var valor_ant = 0;
+	var no_sens = 0;
+	var cont = 0;
+
+	var myChart = new Chart(ctx_live, {
+		type: 'line',
+		data: {
+		labels: [],
+		datasets: [{
+			data: [],
+			borderWidth: 1,
+			borderColor:'green',
+			label: "",
+		}]
+		},
+		options: {
+			responsive: true,
+			animation: {
+				easing: 'linear'
+			},
+			title: {
+				display: true,
+				text: "",
+			},
+			legend: {
+				display: false
+			},
+			scales: {
+				yAxes: [{
+					ticks: {
+						beginAtZero: true,
+					}
+				}]
+			}
+		}
+	});
+
+	$(document).ready(function(){
+		setInterval(getJson, 1500);
+		$("#ct").click(function(){
+			removeData(cont);
+			myChart.update();
+			valor_ant = 0;
+			no_sens = 0;
+			cont = 0;
+
+			$("#sens").html(type_sensor[no_sens]);
+		});
+		$("#ch").click(function(){
+			removeData(cont);
+			myChart.update();
+			valor_ant = 0;
+			no_sens = 1;
+			cont = 0;
+
+			$("#sens").html(type_sensor[no_sens]);
+		});
+		$("#cl").click(function(){
+			removeData(cont);
+			myChart.update();
+			valor_ant = 0;
+			no_sens = 2;
+			cont = 0;
+			
+			$("#sens").html(type_sensor[no_sens]);
+		});
+		$("#cs").click(function(){
+			removeData(cont);
+			myChart.update();
+			valor_ant = 0;
+			no_sens = 3;
+			cont = 0;
+			
+			$("#sens").html(type_sensor[no_sens]);
+		});
+		$("#cm").click(function(){
+			removeData(cont);
+			myChart.update();
+			valor_ant = 0;
+			no_sens = 4;
+			cont = 0;
+			
+			$("#sens").html(type_sensor[no_sens]);
+		});
+	
+		function getJson() {
+			for (s in sensor) {
+				$.getJSON('http://192.168.1.166:8000/' + sensor[s], function(data) {
+					key = Object.keys(data)[0];
+					value = data[key]
+
+					console.log(key, value)
+					if (key == 'temperature') {
+						document.getElementById('ct').innerHTML = "Temperatura: "+value;
+						document.getElementById('temperatura').setAttribute('value', value);					
+						if(no_sens == 0) addData(value);
+					};
+					if (key == 'humidity') {
+						document.getElementById('ch').innerHTML = "Humedad: "+value;
+						document.getElementById('humedad').setAttribute('value', value);
+						if(no_sens == 1) addData(value);
+					};
+					if (key == 'light') {
+						document.getElementById('cl').innerHTML = "Nivel de Luz: "+value;
+						document.getElementById('luz').setAttribute('value', value);
+						if(no_sens == 2) addData(value);
+					};
+					if (key == 'sound') {
+						document.getElementById('cs').innerHTML = "Nivel de sonido: "+value;
+						document.getElementById('sonido').setAttribute('value', value);
+						if(no_sens == 3) {
+							addData(value);
+						} 
+					};
+					if (key == 'motion') {
+						document.getElementById('cm').innerHTML = "Movimiento: " + value;
+						document.getElementById('movimiento').setAttribute('value', value);
+						if(no_sens == 4){
+							addData(value);
+						} 
+					};
+				});
+			}
+		}
+	});
+
+	function addData(value) {
+		momentoActual = new Date() 
+        hora = momentoActual.getHours() 
+        minuto = momentoActual.getMinutes() 
+        segundo = momentoActual.getSeconds() 
+
+		if(value != valor_ant) {
+			myChart.data.labels.push(hora + " : " + minuto + " : " + segundo);
+			myChart.data.datasets[0].data.push(value);
+			valor_ant = value;
+			cont++;
+
+			if(cont > 10){
+				myChart.data.datasets[0].data.splice(0, 1);
+				myChart.data.labels.splice(0, 1);
+			}
+			myChart.update();
+			
+			if(no_sens == 0 && (obj.valor < 19 || obj.valor > 22)) alertify.error("Temperatura crítica");
+			if(no_sens == 1 &&(obj.valor < 30 || obj.valor > 60)) alertify.error("Humedad crítica");
+		}
+	}
+
+	function removeData(value) {
+		for(var i=0; i < value; i++) {
+			myChart.data.datasets[0].data.splice(0, 1);
+			myChart.data.labels.splice(0, 1);
+		}
+	}
+  </script>
+  {% endif%}	   
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html>
+<title>Sensores de Iroom</title>
+<link rel=stylesheet href="{{ url_for('static', filename='style.css') }}">
+{% block head %}{% endblock %}
+
+<div class=page>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <center><h1>IROOM</h1></center>
+  <div class=metanav>
+  {% if not session.logged_in %}
+    <a href="{{ url_for('login') }}"> <button>Entrar </button></a>
+  {% else %}
+    <a href="{{ url_for('sensors') }}">   <button>Sensores</button></a>
+    <a href="{{ url_for('logout') }}">   <button>Salir</button></a>
+    
+  {% endif %}
+  </div>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+
+</div>
